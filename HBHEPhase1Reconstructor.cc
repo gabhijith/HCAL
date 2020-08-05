@@ -383,6 +383,8 @@ HBHEPhase1Reconstructor::HBHEPhase1Reconstructor(const edm::ParameterSet& conf)
       reco_(parseHBHEPhase1AlgoDescription(conf.getParameter<edm::ParameterSet>("algorithm"))),
       negEFilter_(nullptr)
 {
+
+    tf_graph_path = iConfig.getParameter<FileInPath>("tf_graph_path");
     // Check that the reco algorithm has been successfully configured
     if (!reco_.get())
         throw cms::Exception("HBHEPhase1BadConfig")
