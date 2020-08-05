@@ -322,6 +322,7 @@ private:
     // Struct for DLPHIN
     struct DLPHIN_input {HcalDetId hid; HBHEChannelInfo channel_info;};
     std::vector<DLPHIN_input> DLPHIN_input_vec;
+    std::vector<float> DLPHIN_output;
 
     // Status bit setters
     const HBHENegativeEFilter* negEFilter_;    // We don't manage this pointer
@@ -341,6 +342,8 @@ private:
                      HBHEChannelInfo* info,
                      HBHEChannelInfoCollection* infoColl,
                      HBHERecHitCollection* rechits);
+
+    void run_dlphin(std::vector<DLPHIN_input> Dinput_vec, std::vector<float>& Doutput); 
 
     // Methods for setting rechit status bits
     void setAsicSpecificBits(const HBHEDataFrame& frame, const HcalCoder& coder,
@@ -720,6 +723,11 @@ HBHEPhase1Reconstructor::produce(edm::Event& e, const edm::EventSetup& eventSetu
     }
     //===================== end of DLPHIN test ========================
 
+    run_dlphin(DLPHIN_input_vec, DLPHIN_output);
+
+    //-------------------- Got DLPHIN output, Do anything with it----------------- 
+
+
     // Add the output collections to the event record
     if (saveInfos_)
         e.put(std::move(infos));
@@ -814,6 +822,67 @@ HBHEPhase1Reconstructor::fillDescriptions(edm::ConfigurationDescriptions& descri
     add_param_set(pulseShapeParametersQIE11);
     
     descriptions.addDefault(desc);
+}
+
+//---------------------------DLPHIN NN Module--------------------------------
+
+void HBHEPhase1Reconstructor::run_dlphin(std::vector<DLPHIN_input> Dinput_vec, std::vector<float>& Doutput)
+{
+    Doutput.clear() //Flusing any existing values
+    tensorflow::GraphDef *graphDef = tensorflow::loadGraphDef(tf_graph_path.fullPath()); // Where do I define this input ? ####----HUI----####
+    tensorflow::Session *session = tensorflow::createSession(graphDef);
+
+    for(auto dinput : Dinput_vec)
+    {
+        auto hid = dinput.hid;
+        auto rawId = hid.rawId();
+        auto subdet = hid.subdet();
+        auto depth = hid.depth();
+        auto ieta = hid.ieta();
+        auto iphi = hid.iphi();
+
+        auto channel_info = dinput.channel_info;
+        int nSamples = channel_info.nSamples();
+        auto gain = channel_info.tsGain(0);
+
+        if(debug == true) std::cout << gain << ", " << subdet << ", " << depth << ", " << ieta << ", " << iphi << std::endl;
+    
+        tensorflow::Tensor ch_input(tensorflow::DT_FLOAT, {1, 8}); // template for charge input
+        auto ch_input_tensor = ch_input.tensor<float, 2>(); // place holder for taking in values
+
+        tensorflow::Tensor ty_input(tensorflow::DT_FLOAT, {1, 3}); // template for charge input
+        auto ty_input_tensor = ty_input.tensor<float, 2>(); // place holder for taking in values
+
+        for (uint iTS = 0; iTS < nSamples; ++iTS)
+        {
+            auto charge = channel_info.tsRawCharge(iTS);
+            auto ped = channel_info.tsPedestal(iTS);
+            if(debug == true) std::cout << charge << ", " << ped << ", ";
+            ch_input_tensor(0, i) = (charge - ped)*gain
+        }
+
+        ty_input_tensor(0,0) = hid.subdet();
+        ty_input_tensor(0,1) = hid.depth();
+        ty_input_tensor(0,2) = hid.ieta();
+
+        std::vector<tensorflow::Tensor> outputs;
+        tensorflow::run(session, {{"input", input}}, {"activation_4/chi2loss"}, &outputs);
+
+        if (debug)
+            cout << "Got the output" << endl;
+
+        if (debug)
+            std::cout << "output          " << outputs[0].DebugString() << std::endl;
+
+        float temp = float(outputs[0].matrix<float>()(0);
+
+        if(debug) cout << temp << endl;
+
+
+        Doutput.push_back(temp);
+    }
+
+    return;
 }
 
 //define this as a plug-in
