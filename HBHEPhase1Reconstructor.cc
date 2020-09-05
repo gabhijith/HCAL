@@ -60,6 +60,9 @@
 // Fetcher for reco algorithm data
 #include "RecoLocalCalo/HcalRecAlgos/interface/fetchHcalAlgoData.h"
 
+//Inlcude for Tensorflow
+#include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
+
 // Some helper functions
 namespace {
     // Class for making SiPM/QIE11 look like HPD/QIE8. HPD/QIE8
@@ -324,6 +327,11 @@ private:
     std::vector<DLPHIN_input> DLPHIN_input_vec;
     std::vector<float> DLPHIN_output;
 
+    edm::FileInPath tf_graph_path_d1HB_;
+    edm::FileInPath tf_graph_path_dg1HB_;
+    edm::FileInPath tf_graph_path_d1HE_;
+    edm::FileInPath tf_graph_path_dg1HE_;
+
     // Status bit setters
     const HBHENegativeEFilter* negEFilter_;    // We don't manage this pointer
     std::unique_ptr<HBHEStatusBitSetter> hbheFlagSetterQIE8_;
@@ -382,9 +390,17 @@ HBHEPhase1Reconstructor::HBHEPhase1Reconstructor(const edm::ParameterSet& conf)
       setPulseShapeFlagsQIE11_(conf.getParameter<bool>("setPulseShapeFlagsQIE11")),
       reco_(parseHBHEPhase1AlgoDescription(conf.getParameter<edm::ParameterSet>("algorithm"))),
       negEFilter_(nullptr)
+    //   tf_graph_path_d1HB_(conf.getParameter<edm::FileInPath>("tf_graph_path_d1HB")),
+    //   tf_graph_path_dg1HB_(conf.getParameter<edm::FileInPath>("tf_graph_path_dg1HB")),
+    //   tf_graph_path_d1HE_(conf.getParameter<edm::FileInPath>("tf_graph_path_d1HE")),
+    //   tf_graph_path_dg1HE_(conf.getParameter<edm::FileInPath>("tf_graph_path_dg1HE"))
 {
 
-    tf_graph_path = iConfig.getParameter<FileInPath>("tf_graph_path");
+    // tf_graph_path_d1HB = conf.getParameter<edm::FileInPath>("tf_graph_path_d1HB");
+    // tf_graph_path_dg1HB = conf.getParameter<edm::FileInPath>("tf_graph_path_dg1HB");
+    // tf_graph_path_d1HE = conf.getParameter<edm::FileInPath>("tf_graph_path_d1HE");
+    // tf_graph_path_dg1HE = conf.getParameter<edm::FileInPath>("tf_graph_path_dg1HE");
+
     // Check that the reco algorithm has been successfully configured
     if (!reco_.get())
         throw cms::Exception("HBHEPhase1BadConfig")
@@ -830,9 +846,43 @@ HBHEPhase1Reconstructor::fillDescriptions(edm::ConfigurationDescriptions& descri
 
 void HBHEPhase1Reconstructor::run_dlphin(std::vector<DLPHIN_input> Dinput_vec, std::vector<float>& Doutput)
 {
-    Doutput.clear() //Flusing any existing values
-    tensorflow::GraphDef *graphDef = tensorflow::loadGraphDef(tf_graph_path.fullPath()); // Where do I define this input ? ####----HUI----####
-    tensorflow::Session *session = tensorflow::createSession(graphDef);
+    using namespace std;
+    Doutput.clear(); //Flusing any existing values
+
+    // float mean_ieta_d1HB=-0.054157; 
+    // float sigma_ieta_d1HB=9.104166;
+    // std::vector<float> mean_nc_d1HB ={0.087986,0.089302,0.155667,0.785409,0.351332,0.204175,0.107037,0.069306};
+    // std::vector<float> sig_nc_d1HB ={0.295549,0.33179,0.587908,17.359284,4.488336,1.281148,0.494076,0.287554};
+
+    // float mean_ieta_dg1HB=0.099055; 
+    // float sigma_ieta_dg1HB=15.720649;
+    // std::vector<float> mean_nc_dg1HB ={0.11375,0.112285,0.174909,0.473024,0.271582,0.192366,0.120217,0.082072};
+    // std::vector<float> sig_nc_dg1HB ={0.354753,0.401197,0.699862,12.622596,3.113683,0.925417,0.463119,0.316434};
+
+    // float mean_ieta_d1HE=0.070597; 
+    // float sigma_ieta_d1HE=23.709941;
+    // std::vector<float> mean_nc_d1HE ={0.400011,0.53465,0.555192,0.709594,0.629124,0.578796,0.564619,0.257136};
+    // std::vector<float> sig_nc_d1HE ={0.574872,0.680862,0.692751,3.659767,1.764557,0.848981,0.725614,0.355691};
+
+    // float mean_ieta_dg1HE=0.066553; 
+    // float sigma_ieta_dg1HE=24.542992;
+    // float mean_depth_dg1HE=3.432616; 
+    // float sigma_depth_dg1HE=1.484461;
+    // std::vector<float> mean_nc_dg1HE ={0.383787,0.536645,0.564542,1.156667,0.838722,0.648524,0.583858,0.28574};
+    // std::vector<float> sig_nc_dg1HE ={0.779687,0.905963,0.914331,18.055436,7.751092,2.286192,1.230058,0.638278};
+    
+
+    tensorflow::GraphDef *graphDef_d1HB = tensorflow::loadGraphDef("model_d1HB_R2.pb");
+    tensorflow::Session *session_d1HB = tensorflow::createSession(graphDef_d1HB);
+
+    tensorflow::GraphDef *graphDef_dg1HB = tensorflow::loadGraphDef("model_dg1HB_R2.pb");
+    tensorflow::Session *session_dg1HB = tensorflow::createSession(graphDef_dg1HB);
+
+    tensorflow::GraphDef *graphDef_d1HE = tensorflow::loadGraphDef("model_d1HE_R2.pb");
+    tensorflow::Session *session_d1HE = tensorflow::createSession(graphDef_d1HE);
+
+    tensorflow::GraphDef *graphDef_dg1HE = tensorflow::loadGraphDef("model_dg1HE_R2.pb");
+    tensorflow::Session *session_dg1HE = tensorflow::createSession(graphDef_dg1HE);
 
     for(auto dinput : Dinput_vec)
     {
@@ -844,41 +894,87 @@ void HBHEPhase1Reconstructor::run_dlphin(std::vector<DLPHIN_input> Dinput_vec, s
         auto iphi = hid.iphi();
 
         auto channel_info = dinput.channel_info;
-        int nSamples = channel_info.nSamples();
+        uint nSamples = channel_info.nSamples();
         auto gain = channel_info.tsGain(0);
 
-        if(debug == true) std::cout << gain << ", " << subdet << ", " << depth << ", " << ieta << ", " << iphi << std::endl;
+        // if(subdet==1 && depth==1){
+        //     ieta = (ieta - mean_ieta_d1HB)/sigma_ieta_d1HB;
+        // }
+
+        // if(subdet==1 && depth>1){
+        //     ieta = (ieta - mean_ieta_dg1HB)/sigma_ieta_dg1HB;
+        // }
+
+        // if(subdet==2 && depth==1){
+        //     ieta = (ieta - mean_ieta_d1HE)/sigma_ieta_d1HE;
+        // }
+
+        // if(subdet==2 && depth>1){
+        //     ieta = (ieta - mean_ieta_dg1HE)/sigma_ieta_dg1HE;
+        //     depth = (depth - mean_depth_dg1HE)/sigma_depth_dg1HE;
+        // }
+
+        if(true) std::cout << gain << ", " << subdet << ", " << depth << ", " << ieta << ", " << iphi << std::endl;
     
         tensorflow::Tensor ch_input(tensorflow::DT_FLOAT, {1, 8}); // template for charge input
         auto ch_input_tensor = ch_input.tensor<float, 2>(); // place holder for taking in values
 
-        tensorflow::Tensor ty_input(tensorflow::DT_FLOAT, {1, 3}); // template for charge input
+        tensorflow::Tensor ty_input(tensorflow::DT_FLOAT, {1, 2}); // template for charge input
         auto ty_input_tensor = ty_input.tensor<float, 2>(); // place holder for taking in values
 
         for (uint iTS = 0; iTS < nSamples; ++iTS)
         {
             auto charge = channel_info.tsRawCharge(iTS);
             auto ped = channel_info.tsPedestal(iTS);
-            if(debug == true) std::cout << charge << ", " << ped << ", ";
-            ch_input_tensor(0, i) = (charge - ped)*gain
+            if(true) std::cout << charge << ", " << ped << ", ";
+            
+            if(subdet==1 && depth==1){
+                ch_input_tensor(0, iTS) = (((charge - ped)*gain) );//- mean_nc_d1HB[iTS])/sig_nc_d1HB[iTS];
+            }
+
+            if(subdet==1 && depth>1){
+                ch_input_tensor(0, iTS) = (((charge - ped)*gain) );//- mean_nc_dg1HB[iTS])/sig_nc_dg1HB[iTS];
+            }
+
+            if(subdet==2 && depth==1){
+                ch_input_tensor(0, iTS) = (((charge - ped)*gain) );//- mean_nc_d1HE[iTS])/sig_nc_d1HE[iTS];
+            }
+
+            if(subdet==2 && depth>1){
+                ch_input_tensor(0, iTS) = (((charge - ped)*gain) );//- mean_nc_dg1HE[iTS])/sig_nc_dg1HE[iTS];
+            }
         }
 
-        ty_input_tensor(0,0) = hid.subdet();
-        ty_input_tensor(0,1) = hid.depth();
-        ty_input_tensor(0,2) = hid.ieta();
+        // ty_input_tensor(0,0) = hid.subdet();
+        ty_input_tensor(0,1) = depth;
+        ty_input_tensor(0,2) = ieta;
 
         std::vector<tensorflow::Tensor> outputs;
-        tensorflow::run(session, {{"input", input}}, {"activation_4/chi2loss"}, &outputs);
+        if(subdet==1 && depth==1){
+            tensorflow::run(session_d1HB, {{"net_charges",ch_input},{"types_input",ty_input}}, {"dense/Relu"}, &outputs);
+        }
 
-        if (debug)
+        if(subdet==1 && depth>1){
+            tensorflow::run(session_dg1HB, {{"net_charges",ch_input},{"types_input",ty_input}}, {"dense/Relu"}, &outputs);
+        }
+
+        if(subdet==2 && depth==1){
+            tensorflow::run(session_d1HE, {{"net_charges",ch_input},{"types_input",ty_input}}, {"dense/Relu"}, &outputs);
+        }
+
+        if(subdet==2 && depth>1){
+            tensorflow::run(session_dg1HE, {{"net_charges",ch_input},{"types_input",ty_input}}, {"dense/Relu"}, &outputs);
+        }
+
+        if (true)
             cout << "Got the output" << endl;
 
-        if (debug)
-            std::cout << "output          " << outputs[0].DebugString() << std::endl;
+        // if (true)
+        //     std::cout << "output          " << outputs[0].DebugString() << std::endl;
 
-        float temp = float(outputs[0].matrix<float>()(0);
+        float temp = float(outputs[0].matrix<float>()(0));
 
-        if(debug) cout << temp << endl;
+        if(true) cout << temp << endl;
 
 
         Doutput.push_back(temp);

@@ -33,7 +33,7 @@ process.maxEvents = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-	'file:/eos/uscms/store/user/lpcrutgers/sve6/2018_1TeV_pion_gun_RAW_0PU-2020-07-25/Run3_RelVal_1TeV_pion_gun_RAW_0.root'
+	'root://cmseos.fnal.gov//store/user/lpcrutgers/sve6/2018_1TeV_pion_gun_RAW_0PU-2020-07-25/Run3_RelVal_1TeV_pion_gun_RAW_0.root'
 	#my_list
 	),
     secondaryFileNames = cms.untracked.vstring()

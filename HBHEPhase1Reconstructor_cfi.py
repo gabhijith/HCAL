@@ -9,6 +9,11 @@ import RecoLocalCalo.HcalRecProducers.HBHEStatusBitSetter_cfi as hbheStatusFlag
 hbheprereco = cms.EDProducer(
     "HBHEPhase1Reconstructor",
 
+    # tf_graph_path_d1HB = cms.FileInPath('RecoLocalCalo/HcalRecProducers/data/model_d1HB_R1.pb'),
+    # tf_graph_path_dg1HB = cms.FileInPath('RecoLocalCalo/HcalRecProducers/data/model_dg1HB_R1.pb'),
+    # tf_graph_path_d1HE = cms.FileInPath('RecoLocalCalo/HcalRecProducers/data/model_d1HE_R1.pb'),
+    # tf_graph_path_dg1HE = cms.FileInPath('RecoLocalCalo/HcalRecProducers/data/model_dg1HE_R1.pb'),
+
     # Label for the input HBHEDigiCollection, and flag indicating
     # whether we should process this collection
     digiLabelQIE8 = cms.InputTag("hcalDigis"),
@@ -47,14 +52,14 @@ hbheprereco = cms.EDProducer(
 
     # Flag to use only 8 TSs for reconstruction. This should be in effect
     # only when there are 10 TSs, e.g., <=2017
-    use8ts = cms.bool(True),
+    # use8ts = cms.bool(True),
 
     # Parameters which define how we calculate the charge for the basic SiPM
     # nonlinearity correction. To sum up the charge in all time slices
     # (e.g., for cosmics), set sipmQTSShift to -100 and sipmQNTStoSum to 200.
     sipmQTSShift = cms.int32(0),
     sipmQNTStoSum = cms.int32(3),
-    tf_graph_path = cms.FileInPath('<path_to_our_graph from CMSSW_X_X_X/src>'),
+    
 
     # Configure the reconstruction algorithm
     algorithm = cms.PSet(
