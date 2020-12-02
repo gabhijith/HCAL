@@ -60,7 +60,12 @@
 // Fetcher for reco algorithm data
 #include "RecoLocalCalo/HcalRecAlgos/interface/fetchHcalAlgoData.h"
 
+<<<<<<< HEAD
 //Inlcude for Tensorflow
+=======
+#include "TFile.h"
+#include "TProfile2D.h"
+>>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
 
 // Some helper functions
@@ -315,6 +320,10 @@ private:
     bool setPulseShapeFlagsQIE8_;
     bool setPulseShapeFlagsQIE11_;
 
+    // DLPHIN parameters
+    std::string DLPHIN_pb_d1HB_, DLPHIN_pb_dg1HB_, DLPHIN_pb_d1HE_, DLPHIN_pb_dg1HE_, DLPHIN_pb_SF_;
+    bool DLPHIN_print_, DLPHIN_scale_, DLPHIN_save_;
+
     // Other members
     edm::EDGetTokenT<HBHEDigiCollection> tok_qie8_;
     edm::EDGetTokenT<QIE11DigiCollection> tok_qie11_;
@@ -323,14 +332,19 @@ private:
     std::unique_ptr<HcalRecoParams> paramTS_;
 
     // Struct for DLPHIN
-    struct DLPHIN_input {HcalDetId hid; HBHEChannelInfo channel_info;};
+    tensorflow::Session *session_d1HB, *session_dg1HB, *session_d1HE, *session_dg1HE;
+    TProfile2D *ratio_HB, *ratio_HE;
+    struct DLPHIN_input {HBHEChannelInfo channel_info; double resp_corr; HBHERecHit rec_hit;};
     std::vector<DLPHIN_input> DLPHIN_input_vec;
     std::vector<float> DLPHIN_output;
+<<<<<<< HEAD
 
     edm::FileInPath tf_graph_path_d1HB_;
     edm::FileInPath tf_graph_path_dg1HB_;
     edm::FileInPath tf_graph_path_d1HE_;
     edm::FileInPath tf_graph_path_dg1HE_;
+=======
+>>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
 
     // Status bit setters
     const HBHENegativeEFilter* negEFilter_;    // We don't manage this pointer
@@ -351,7 +365,13 @@ private:
                      HBHEChannelInfoCollection* infoColl,
                      HBHERecHitCollection* rechits);
 
+<<<<<<< HEAD
     void run_dlphin(std::vector<DLPHIN_input> Dinput_vec, std::vector<float>& Doutput); 
+=======
+    // Function to run DLPHIN
+    void run_dlphin(std::vector<DLPHIN_input> Dinput_vec, std::vector<float>& Doutput);
+    void save_dlphin(std::vector<float> Doutput, HBHERecHitCollection* rechits);
+>>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
 
     // Methods for setting rechit status bits
     void setAsicSpecificBits(const HBHEDataFrame& frame, const HcalCoder& coder,
@@ -388,6 +408,14 @@ HBHEPhase1Reconstructor::HBHEPhase1Reconstructor(const edm::ParameterSet& conf)
       setNoiseFlagsQIE11_(conf.getParameter<bool>("setNoiseFlagsQIE11")),
       setPulseShapeFlagsQIE8_(conf.getParameter<bool>("setPulseShapeFlagsQIE8")),
       setPulseShapeFlagsQIE11_(conf.getParameter<bool>("setPulseShapeFlagsQIE11")),
+      DLPHIN_pb_d1HB_(conf.getParameter<std::string>("DLPHIN_pb_d1HB")),
+      DLPHIN_pb_dg1HB_(conf.getParameter<std::string>("DLPHIN_pb_dg1HB")),
+      DLPHIN_pb_d1HE_(conf.getParameter<std::string>("DLPHIN_pb_d1HE")),
+      DLPHIN_pb_dg1HE_(conf.getParameter<std::string>("DLPHIN_pb_dg1HE")),
+      DLPHIN_pb_SF_(conf.getParameter<std::string>("DLPHIN_pb_SF")),
+      DLPHIN_print_(conf.getParameter<bool>("DLPHIN_print")),
+      DLPHIN_scale_(conf.getParameter<bool>("DLPHIN_scale")),
+      DLPHIN_save_(conf.getParameter<bool>("DLPHIN_save")),
       reco_(parseHBHEPhase1AlgoDescription(conf.getParameter<edm::ParameterSet>("algorithm"))),
       negEFilter_(nullptr)
     //   tf_graph_path_d1HB_(conf.getParameter<edm::FileInPath>("tf_graph_path_d1HB")),
@@ -440,6 +468,27 @@ HBHEPhase1Reconstructor::HBHEPhase1Reconstructor(const edm::ParameterSet& conf)
 
     if (makeRecHits_)
         produces<HBHERecHitCollection>();
+
+    //std::cout << "HBHEPhase1Reconstructor is called" << std::endl;
+    // Keep DLPHIN sessions in memory during process
+    tensorflow::GraphDef *graphDef_d1HB = tensorflow::loadGraphDef(DLPHIN_pb_d1HB_);
+    session_d1HB = tensorflow::createSession(graphDef_d1HB);
+
+    tensorflow::GraphDef *graphDef_dg1HB = tensorflow::loadGraphDef(DLPHIN_pb_dg1HB_);
+    session_dg1HB = tensorflow::createSession(graphDef_dg1HB);
+
+    tensorflow::GraphDef *graphDef_d1HE = tensorflow::loadGraphDef(DLPHIN_pb_d1HE_);
+    session_d1HE = tensorflow::createSession(graphDef_d1HE);
+
+    tensorflow::GraphDef *graphDef_dg1HE = tensorflow::loadGraphDef(DLPHIN_pb_dg1HE_);
+    session_dg1HE = tensorflow::createSession(graphDef_dg1HE);
+
+    if(DLPHIN_scale_)
+    {
+        TFile *ratio_file = new TFile(DLPHIN_pb_SF_.c_str());
+        ratio_HB = (TProfile2D*)ratio_file->Get("ratio_ieta_depth_HB_h_pyx");
+        ratio_HE = (TProfile2D*)ratio_file->Get("ratio_ieta_depth_HE_h_pyx");
+    }
 }
 
 
@@ -563,9 +612,6 @@ void HBHEPhase1Reconstructor::processData(const Collection& coll,
         if (infos && (saveDroppedInfos_ || makeThisRechit))
             infos->push_back(*channelInfo);
 
-        // Save DLPHIN_input
-        if (makeThisRechit) {DLPHIN_input_vec.push_back((DLPHIN_input){cell, *channelInfo});}
-
         // Reconstruct the rechit
         if (rechits && makeThisRechit)
         {
@@ -578,6 +624,9 @@ void HBHEPhase1Reconstructor::processData(const Collection& coll,
                 setAsicSpecificBits(frame, coder, *channelInfo, calib, &rh);
                 setCommonStatusBits(*channelInfo, calib, &rh);
                 rechits->push_back(rh);
+
+                // Save DLPHIN_input
+                DLPHIN_input_vec.push_back((DLPHIN_input){*channelInfo, calib.respcorr(), rh});
             }
         }
     }
@@ -691,6 +740,10 @@ HBHEPhase1Reconstructor::produce(edm::Event& e, const edm::EventSetup& eventSetu
         out->reserve(maxOutputSize);
     }
 
+    //Clear DLPHIN input/output vectors for each event
+    DLPHIN_input_vec.clear();
+    DLPHIN_output.clear();
+
     // Process the input collections, filling the output ones
     const bool isData = e.isRealData();
     if (processQIE8_)
@@ -717,29 +770,9 @@ HBHEPhase1Reconstructor::produce(edm::Event& e, const edm::EventSetup& eventSetu
             hbheFlagSetterQIE11_->SetFlagsFromRecHits(*out);
     }
 
-    //======================= DLPHIN test here =======================
-    for (auto iter : DLPHIN_input_vec)
-    {
-        auto hid = iter.hid;
-        auto rawId = hid.rawId();
-        auto subdet = hid.subdet();
-        auto depth = hid.depth();
-        auto ieta = hid.ieta();
-        auto iphi = hid.iphi();
-
-        auto channel_info = iter.channel_info;
-        int nSamples = channel_info.nSamples();
-        auto gain = channel_info.tsGain(0);
-        for (int iTS = 0; iTS < nSamples; ++iTS)
-        {
-            auto charge = channel_info.tsRawCharge(iTS);
-            auto ped = channel_info.tsPedestal(iTS);
-            std::cout << charge << ", " << ped << ", ";
-        }
-
-        std::cout << gain << ", " << subdet << ", " << depth << ", " << ieta << ", " << iphi << std::endl;
-    }
-    //===================== end of DLPHIN test ========================
+    // Run DLPHIN
+    run_dlphin(DLPHIN_input_vec, DLPHIN_output);
+    if(DLPHIN_save_)save_dlphin(DLPHIN_output, out.get());
 
     run_dlphin(DLPHIN_input_vec, DLPHIN_output);
 
@@ -832,6 +865,14 @@ HBHEPhase1Reconstructor::fillDescriptions(edm::ConfigurationDescriptions& descri
     desc.add<bool>("setPulseShapeFlagsQIE11");
     desc.add<bool>("setLegacyFlagsQIE8");
     desc.add<bool>("setLegacyFlagsQIE11");
+    desc.add<std::string>("DLPHIN_pb_d1HB");
+    desc.add<std::string>("DLPHIN_pb_dg1HB");
+    desc.add<std::string>("DLPHIN_pb_d1HE");
+    desc.add<std::string>("DLPHIN_pb_dg1HE");
+    desc.add<std::string>("DLPHIN_pb_SF");
+    desc.add<bool>("DLPHIN_print");
+    desc.add<bool>("DLPHIN_scale");
+    desc.add<bool>("DLPHIN_save");
 
     add_param_set(algorithm);
     add_param_set(flagParametersQIE8);
@@ -842,6 +883,7 @@ HBHEPhase1Reconstructor::fillDescriptions(edm::ConfigurationDescriptions& descri
     descriptions.addDefault(desc);
 }
 
+<<<<<<< HEAD
 //---------------------------DLPHIN NN Module--------------------------------
 
 void HBHEPhase1Reconstructor::run_dlphin(std::vector<DLPHIN_input> Dinput_vec, std::vector<float>& Doutput)
@@ -887,12 +929,28 @@ void HBHEPhase1Reconstructor::run_dlphin(std::vector<DLPHIN_input> Dinput_vec, s
     for(auto dinput : Dinput_vec)
     {
         auto hid = dinput.hid;
+=======
+void HBHEPhase1Reconstructor::run_dlphin(std::vector<DLPHIN_input> Dinput_vec, std::vector<float>& Doutput)
+{
+    if(DLPHIN_print_) std::cout << "reco: TS1 raw charge, TS1 ped noise, TS2 raw charge, TS2 ped noise, TS3 raw charge, TS3 ped noise, TS4 raw charge, TS4 ped noise, TS5 raw charge, TS5 ped noise, TS6 raw charge, TS6 ped noise, TS7 raw charge, TS7 ped noise, TS8 raw charge, TS8 ped noise, raw gain, gain, raw energy, aux energy, mahi energy, flags, id, sub detector, depth, ieta, iphi, DLPHIN energy, DLPHIN_SF" << std::endl;
+
+    for(auto iter : Dinput_vec)
+    {
+        auto rec_hit = iter.rec_hit;
+        auto eraw = rec_hit.eraw();     //m0
+        auto eaux = rec_hit.eaux();     //m3 by default
+        auto energy = rec_hit.energy(); //mahi
+        auto flags = rec_hit.flags();
+
+        auto hid = rec_hit.id();
+>>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
         auto rawId = hid.rawId();
         auto subdet = hid.subdet();
         auto depth = hid.depth();
         auto ieta = hid.ieta();
         auto iphi = hid.iphi();
 
+<<<<<<< HEAD
         auto channel_info = dinput.channel_info;
         uint nSamples = channel_info.nSamples();
         auto gain = channel_info.tsGain(0);
@@ -916,12 +974,22 @@ void HBHEPhase1Reconstructor::run_dlphin(std::vector<DLPHIN_input> Dinput_vec, s
 
         if(true) std::cout << gain << ", " << subdet << ", " << depth << ", " << ieta << ", " << iphi << std::endl;
     
+=======
+        auto channel_info = iter.channel_info;
+        int nSamples = channel_info.nSamples();
+        auto gain = channel_info.tsGain(0);
+
+        auto resp_corr = iter.resp_corr;
+        float rawgain = gain / resp_corr;
+
+>>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
         tensorflow::Tensor ch_input(tensorflow::DT_FLOAT, {1, 8}); // template for charge input
         auto ch_input_tensor = ch_input.tensor<float, 2>(); // place holder for taking in values
 
         tensorflow::Tensor ty_input(tensorflow::DT_FLOAT, {1, 2}); // template for charge input
         auto ty_input_tensor = ty_input.tensor<float, 2>(); // place holder for taking in values
 
+<<<<<<< HEAD
         for (uint iTS = 0; iTS < nSamples; ++iTS)
         {
             auto charge = channel_info.tsRawCharge(iTS);
@@ -981,6 +1049,50 @@ void HBHEPhase1Reconstructor::run_dlphin(std::vector<DLPHIN_input> Dinput_vec, s
     }
 
     return;
+=======
+        for (int iTS = 0; iTS < nSamples; ++iTS)
+        {
+            auto charge = channel_info.tsRawCharge(iTS);
+            auto ped = channel_info.tsPedestal(iTS);
+            if(DLPHIN_print_)std::cout << charge << ", " << ped << ", ";
+
+            ch_input_tensor(0, iTS) = (charge - ped) * rawgain;
+        }
+
+        // ty_input_tensor(0,0) = hid.subdet();
+        ty_input_tensor(0,0) = depth;
+        ty_input_tensor(0,1) = ieta;
+
+        float DLPHIN_SF = 1.0;          //SF dirived from MAHI / DLPHIN
+        std::vector<tensorflow::Tensor> outputs;
+        if(subdet == 1)
+        {
+            if(DLPHIN_scale_) DLPHIN_SF = ratio_HB->GetBinContent(ratio_HB->GetXaxis()->FindBin(abs(ieta)), ratio_HB->GetYaxis()->FindBin(depth));
+            if(depth == 1) {tensorflow::run(session_d1HB, {{"net_charges",ch_input},{"types_input",ty_input}}, {"dense/Relu"}, &outputs);}
+            else {tensorflow::run(session_dg1HB, {{"net_charges",ch_input},{"types_input",ty_input}}, {"dense/Relu"}, &outputs);}
+        }
+
+        else if(subdet == 2)
+        {
+            if(DLPHIN_scale_) DLPHIN_SF = ratio_HE->GetBinContent(ratio_HE->GetXaxis()->FindBin(abs(ieta)), ratio_HE->GetYaxis()->FindBin(depth));
+            if(depth == 1) {tensorflow::run(session_d1HE, {{"net_charges",ch_input},{"types_input",ty_input}}, {"dense/Relu"}, &outputs);}
+            else {tensorflow::run(session_dg1HE, {{"net_charges",ch_input},{"types_input",ty_input}}, {"dense/Relu"}, &outputs);}
+        }
+
+        float temp = float(outputs[0].matrix<float>()(0));
+        if(DLPHIN_print_) std::cout << rawgain << ", " << gain << ", " << eraw << ", " << eaux << ", " << energy << ", " << flags << ", " << rawId << ", " << subdet << ", " << depth << ", " << ieta << ", " << iphi << ", " << temp << ", " << DLPHIN_SF << std::endl;
+
+        Doutput.push_back(temp * resp_corr / DLPHIN_SF);
+    }
+}
+
+void HBHEPhase1Reconstructor::save_dlphin(std::vector<float> Doutput, HBHERecHitCollection* rechits)
+{
+    for(int i = 0; i < (int)Doutput.size(); i++)
+    {
+        (*rechits)[i].setEnergy(Doutput.at(i));
+    }
+>>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
 }
 
 //define this as a plug-in

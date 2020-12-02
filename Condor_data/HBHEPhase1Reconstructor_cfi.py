@@ -6,23 +6,12 @@ import RecoLocalCalo.HcalRecProducers.HBHEMahiParameters_cfi as mahi
 import RecoLocalCalo.HcalRecProducers.HBHEPulseShapeFlagSetter_cfi as pulseShapeFlag
 import RecoLocalCalo.HcalRecProducers.HBHEStatusBitSetter_cfi as hbheStatusFlag
 
-<<<<<<< HEAD
-hbheprereco = cms.EDProducer(
-    "HBHEPhase1Reconstructor",
-
-    # tf_graph_path_d1HB = cms.FileInPath('RecoLocalCalo/HcalRecProducers/data/model_d1HB_R1.pb'),
-    # tf_graph_path_dg1HB = cms.FileInPath('RecoLocalCalo/HcalRecProducers/data/model_dg1HB_R1.pb'),
-    # tf_graph_path_d1HE = cms.FileInPath('RecoLocalCalo/HcalRecProducers/data/model_d1HE_R1.pb'),
-    # tf_graph_path_dg1HE = cms.FileInPath('RecoLocalCalo/HcalRecProducers/data/model_dg1HE_R1.pb'),
-
-=======
 import os
 DLPHIN_pb_folder = "%s/src/HCAL/DLPHIN_pb/" % os.environ['CMSSW_BASE']
 
 hbheprereco = cms.EDProducer(
     "HBHEPhase1Reconstructor",
 
->>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
     # Label for the input HBHEDigiCollection, and flag indicating
     # whether we should process this collection
     digiLabelQIE8 = cms.InputTag("hcalDigis"),
@@ -59,22 +48,11 @@ hbheprereco = cms.EDProducer(
     # collection will not include such channels even if this flag is set.
     saveDroppedInfos = cms.bool(False),
 
-<<<<<<< HEAD
-    # Flag to use only 8 TSs for reconstruction. This should be in effect
-    # only when there are 10 TSs, e.g., <=2017
-    # use8ts = cms.bool(True),
-
-=======
->>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
     # Parameters which define how we calculate the charge for the basic SiPM
     # nonlinearity correction. To sum up the charge in all time slices
     # (e.g., for cosmics), set sipmQTSShift to -100 and sipmQNTStoSum to 200.
     sipmQTSShift = cms.int32(0),
     sipmQNTStoSum = cms.int32(3),
-<<<<<<< HEAD
-    
-=======
->>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
 
     # Configure the reconstruction algorithm
     algorithm = cms.PSet(
@@ -96,14 +74,7 @@ hbheprereco = cms.EDProducer(
         useM3 = cms.bool(True),
 
         # Use Mahi?
-<<<<<<< HEAD
-        useMahi = cms.bool(True),
-
-        # Apply legacy HB- energy correction?
-        applyLegacyHBMCorrection = cms.bool(True)
-=======
         useMahi = cms.bool(True)
->>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
     ),
 
     # Reconstruction algorithm configuration data to fetch from DB, if any
@@ -119,19 +90,16 @@ hbheprereco = cms.EDProducer(
     setLegacyFlagsQIE8 = cms.bool(True),
     setLegacyFlagsQIE11 = cms.bool(False),
 
-<<<<<<< HEAD
-=======
     # DLPHIN parameters
     DLPHIN_pb_d1HB = cms.string(DLPHIN_pb_folder + "model_d1HB_R2.pb"),
     DLPHIN_pb_dg1HB = cms.string(DLPHIN_pb_folder + "model_dg1HB_R2.pb"),
     DLPHIN_pb_d1HE = cms.string(DLPHIN_pb_folder + "model_d1HE_R2.pb"),
     DLPHIN_pb_dg1HE = cms.string(DLPHIN_pb_folder + "model_dg1HE_R2.pb"),
     DLPHIN_pb_SF = cms.string(DLPHIN_pb_folder + "DLPHIN_MAHI_ratio.root"),
-    DLPHIN_print = cms.bool(False),
-    DLPHIN_scale = cms.bool(True),
-    DLPHIN_save = cms.bool(True),
+    DLPHIN_print = cms.bool(True),
+    DLPHIN_scale = cms.bool(False),
+    DLPHIN_save = cms.bool(False),
 
->>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
     # Parameter sets configuring rechit status bit setters
     flagParametersQIE8 = cms.PSet(
         hbheStatusFlag.qie8Config
@@ -148,11 +116,4 @@ hbheprereco = cms.EDProducer(
 hbheprereco.pulseShapeParametersQIE8.TrianglePeakTS = cms.uint32(10000)
 
 from Configuration.Eras.Modifier_run2_HE_2017_cff import run2_HE_2017
-<<<<<<< HEAD
-run2_HE_2017.toModify(hbheprereco, saveEffectivePedestal = True)
-
-from Configuration.Eras.Modifier_run3_HB_cff import run3_HB
-run3_HB.toModify(hbheprereco, algorithm = dict(applyLegacyHBMCorrection = False))
-=======
 run2_HE_2017.toModify(hbheprereco, saveEffectivePedestal = cms.bool(True))
->>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e

@@ -57,26 +57,27 @@ process.FEVTSIMoutput = cms.OutputModule("PoolOutputModule",
         dataTier = cms.untracked.string(''),
         filterName = cms.untracked.string('')
     ),
-    fileName = cms.untracked.string('file:results_temp/reco_test.root'),
+    fileName = cms.untracked.string('reco_test.root'),
     outputCommands = process.FEVTSIMEventContent.outputCommands,
     splitLevel = cms.untracked.int32(0)
 )
 
 # Additional output definition
-process.TFileService = cms.Service("TFileService", fileName = cms.string("gen_hist.root") )
+#process.TFileService = cms.Service("TFileService", fileName = cms.string("gen_hist.root") )
 
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, '102X_upgrade2018_realistic_v15', '')
 
 # Path and EndPath definitions
-process.myAna = cms.EDAnalyzer(
-    "HCALTestAna",
-    do_PU = cms.untracked.bool(True),
-    is_run3_relVal = cms.untracked.bool(False),
-    min_simHit_energy = cms.untracked.double(0.0))
+#process.myAna = cms.EDAnalyzer(
+#    "HCALTestAna",
+#    do_PU = cms.untracked.bool(True),
+#    is_run3_relVal = cms.untracked.bool(False),
+#    min_simHit_energy = cms.untracked.double(0.0))
 
-process.raw2digi_step = cms.Path(process.myAna + process.RawToDigi)
+#process.raw2digi_step = cms.Path(process.myAna + process.RawToDigi)
+process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.FEVTSIMoutput_step = cms.EndPath(process.FEVTSIMoutput)
@@ -87,7 +88,7 @@ from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
 
 #Setup FWK for multithreaded
-process.options.numberOfThreads=cms.untracked.uint32(1)
+process.options.numberOfThreads=cms.untracked.uint32(2)
 process.options.numberOfStreams=cms.untracked.uint32(0)
 
 

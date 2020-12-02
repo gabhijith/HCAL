@@ -2,11 +2,10 @@ import os
 from shutil import copyfile
 from datetime import date
 
-folder_name = "2018_1TeV_pion_gun_PU0_DLPHIN_test"
+folder_name = "2018_1TeV_pion_gun_PU0_plots"
 result_path = "/eos/uscms/store/user/huiwang/HCAL/"
 condor_path = "/uscms_data/d3/huiwang/condor_temp/huiwang/HCAL/"
-file_list = "../FileList/2018_1TeV_pion_gun_RAW_0PU.list"
-tot_jobs = 100
+file_list = "../FileList/2018_1TeV_pion_gun_PU0_results_csv.list"
 
 today = str(date.today())
 folder_name_full = folder_name + "-" + today
@@ -30,24 +29,10 @@ header = (""
 + "Log = " + condor_path_full + "/$(Process).log\n"
 )
 
-tot_lines = len(my_list)
-my_step = max(int(tot_lines / tot_jobs),1) #int returns floor
-list_of_sublist = []
-for i in xrange (0, tot_lines, my_step):
-	list_of_sublist.append(my_list[i : i + my_step])
-
-for j in range (len(list_of_sublist)):
-	f = open("FileList_" + str(j) + ".list", "w")
-	for line in list_of_sublist[j]:
-		f.write(line)
-	f.close()
-	header = header + "\nArguments = FileList_" + str(j) + ".list " + result_path_full + "/ " + str(j)
-	header = header + "\nQueue"
-
-os.system("tar -cf FileList.tar FileList_*.list")
-os.system("mkdir -p FileList_test")
-os.system("rm FileList_test/*.list")
-os.system("mv FileList_*.list FileList_test")
+for j in range (len(my_list)):
+    my_file = my_list[j].strip()
+    header = header + "\nArguments = " + my_file + " " + result_path_full + "/ " + str(j)
+    header = header + "\nQueue"
 
 copyfile("condor_submit.back", "condor_submit.txt")
 f = open("condor_submit.txt", "a")

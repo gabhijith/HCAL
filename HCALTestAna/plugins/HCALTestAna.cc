@@ -166,9 +166,9 @@ void HCALTestAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 		auto rawId = hid.rawId();
 		auto subdet = hid.subdet();
 		auto depth = hid.depth();
-		auto ieta = hid.ieta();
+		//auto ieta = hid.ieta();
 		auto ietaAbs = hid.ietaAbs();
-		auto iphi = hid.iphi();
+		//auto iphi = hid.iphi();
 
 		auto energy = iter.energy();
 		auto time = iter.time();
@@ -256,17 +256,16 @@ void HCALTestAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 				break;
 			}
 		}
-		std::cout << "gen: id, energy, median time, weighted time, PU" << std::endl;
+		std::cout << "gen: id, raw truth energy, median time, weighted time, PU" << std::endl;
 	}
-	else std::cout << "gen: id, energy, median time, weighted time" << std::endl;
+	else std::cout << "gen: id, raw truth energy, median time, weighted time" << std::endl;
 
 	for(auto iter : id_energy_map)
 	{
 		auto rawId = iter.first;
-		float RespCorr = 1;
-		const HcalCalibrations& calibrations = conditions->getHcalCalibrations(rawId);
-		//HcalRespCorr(rawId, RespCorr);
-		RespCorr = calibrations.respcorr ();
+		//float RespCorr = 1;
+		//const HcalCalibrations& calibrations = conditions->getHcalCalibrations(rawId);
+		//RespCorr = calibrations.respcorr();
 
                 std::vector<float> energy_vec = id_energy_map.at(rawId);
                 std::vector<float> time_vec = id_time_map.at(rawId);
@@ -292,14 +291,13 @@ void HCALTestAna::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
                     */
                     //====================end of test====================================
                 }
-                channel_energy_vs_time_h->Fill(energy_sum * RespCorr, weighted_time);
+                channel_energy_vs_time_h->Fill(energy_sum, weighted_time);
                 std::sort(time_vec.begin(), time_vec.end());
                 float median_time = time_vec.at(vec_size/2);
 
-		if(do_PU) std::cout << rawId << ", " << energy_sum * RespCorr << ", " << median_time << ", " << weighted_time << ", " << obs_npu << std::endl;
-		else std::cout << rawId << ", " << energy_sum * RespCorr << ", " << median_time << ", " << weighted_time << ", " << std::endl;
+		if(do_PU) std::cout << rawId << ", " << energy_sum << ", " << median_time << ", " << weighted_time << ", " << obs_npu << std::endl;
+		else std::cout << rawId << ", " << energy_sum << ", " << median_time << ", " << weighted_time << ", " << std::endl;
 	}
-	std::cout << "reco: TS1 raw charge, TS1 ped noise, TS1 ADC count, TS1 rise time, TS1 fcByPE, TS2 raw charge, TS2 ped noise, TS2 ADC count, TS2 rise time, TS2 fcByPE, TS3 raw charge, TS3 ped noise, TS3 ADC count, TS3 rise time, TS3 fcByPE, TS4 raw charge, TS4 ped noise, TS4 ADC count, TS4 rise time, TS4 fcByPE, TS5 raw charge, TS5 ped noise, TS5 ADC count, TS5 rise time, TS5 fcByPE, TS6 raw charge, TS6 ped noise, TS6 ADC count, TS6 rise time, TS6 fcByPE, TS7 raw charge, TS7 ped noise, TS7 ADC count, TS7 rise time, TS7 fcByPE, TS8 raw charge, TS8 ped noise, TS8 ADC count, TS8 rise time, TS8 fcByPE, raw energy, gain, reco energy, id, sub detector, depth, ieta, iphi" << std::endl;
 }
 
 

@@ -4,7 +4,7 @@
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
 # with command line options: reco_test --filein file:root://cmsxrootd.fnal.gov//store/mc/RunIIAutumn18DR/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/GEN-SIM-DIGI-RAW/PUAvg50IdealConditions_IdealConditions_102X_upgrade2018_design_v9_ext1-v2/260000/4978A440-0E12-8541-86B8-81086CDC98A0.root --fileout file:reco_test.root --mc --eventcontent FEVTSIM --conditions 102X_upgrade2018_design_v9 --step RAW2DIGI,RECO --nThreads 8 --geometry DB:Extended --era Run2_2018
 import FWCore.ParameterSet.Config as cms
-
+import sys
 from Configuration.StandardSequences.Eras import eras
 
 process = cms.Process('RECO',eras.Run2_2018)
@@ -23,18 +23,23 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
+    input = cms.untracked.int32(-1)
 )
 
-#f = open("opendata_2018_TTbar_0.list", "r")
-#my_list = f.readlines()
-#f.close()
+f = open(sys.argv[2], "r")
+my_list = f.readlines()
+f.close()
 
 # Input source
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
+<<<<<<< HEAD
 	'root://cmseos.fnal.gov//store/user/lpcrutgers/sve6/2018_1TeV_pion_gun_RAW_0PU-2020-07-25/Run3_RelVal_1TeV_pion_gun_RAW_0.root'
 	#my_list
+=======
+	#'file:/eos/uscms/store/user/lpcrutgers/sve6/2018_1TeV_pion_gun_RAW_0PU-2020-07-25/Run3_RelVal_1TeV_pion_gun_RAW_0.root'
+	my_list
+>>>>>>> 85de9a76fcdc071977a5797d5627a07cdf90ff0e
 	),
     secondaryFileNames = cms.untracked.vstring()
 )
@@ -57,7 +62,7 @@ process.FEVTSIMoutput = cms.OutputModule("PoolOutputModule",
         dataTier = cms.untracked.string(''),
         filterName = cms.untracked.string('')
     ),
-    fileName = cms.untracked.string('file:reco_test.root'),
+    fileName = cms.untracked.string('file:results_temp/reco_test.root'),
     outputCommands = process.FEVTSIMEventContent.outputCommands,
     splitLevel = cms.untracked.int32(0)
 )
@@ -67,7 +72,7 @@ process.TFileService = cms.Service("TFileService", fileName = cms.string("gen_hi
 
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '102X_upgrade2018_design_v9', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, '102X_upgrade2018_realistic_v15', '')
 
 # Path and EndPath definitions
 process.myAna = cms.EDAnalyzer(
